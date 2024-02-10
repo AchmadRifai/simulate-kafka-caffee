@@ -1,1 +1,6 @@
 apps/
+cashier-service/target/
+helper-service/target/
+kitchen-service/target/
+supplier-service/target/
+waitres-service/target/
