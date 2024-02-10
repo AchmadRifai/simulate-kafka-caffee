@@ -1,0 +1,23 @@
+package achmad.rifai.supplier.dto;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@AllArgsConstructor
+@Builder
+@Data
+@NoArgsConstructor
+public class MenuDto implements Serializable {
+
+	private static final long serialVersionUID = -4241173811447795098L;
+
+	private String name;
+    private String category;
+    private BigDecimal price;
+    private Integer quantity;
+}

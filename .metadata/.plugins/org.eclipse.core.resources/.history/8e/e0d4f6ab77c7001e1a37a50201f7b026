@@ -1,0 +1,37 @@
+package achmad.rifai.kitchen.services;
+
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.kitchen.dto.KafkaMessage;
+import achmad.rifai.kitchen.dto.RedisSaver;
+import achmad.rifai.kitchen.models.Supplied;
+import achmad.rifai.kitchen.repositories.SuppliedRepository;
+import jakarta.transaction.Transactional;
+
+@Service
+public class KitchenService {
+
+	@Autowired
+	ReactiveRedisTemplate<String, RedisSaver> redisTemplate;
+	@Autowired
+	SuppliedRepository suppliedRepository;
+
+	@Transactional
+	public void supplying(KafkaMessage message) {
+		final var cache = redisTemplate.opsForValue().getAndDelete(message.getId()).blockOptional().orElseThrow();
+		final var supplied = suppliedRepository.save(Supplied.builder()
+				.email(String.valueOf(cache.getRedisLocal().get("email")))
+				.id(UUID.fromString(message.getId()))
+				.build());
+	}
+
+	@Transactional
+	public void ordering(KafkaMessage message) {
+		//
+	}
+
+}

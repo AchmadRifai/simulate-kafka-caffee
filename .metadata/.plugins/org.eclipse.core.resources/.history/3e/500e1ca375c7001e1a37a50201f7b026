@@ -1,0 +1,34 @@
+package achmad.rifai.kitchen.services;
+
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class ConsumerService {
+
+	@KafkaListener(topics = "cashier2kitchen", groupId = "my-group")
+	public void fromCashier(String message, Acknowledgment acknowledgment) {
+		try {
+			log.info("Topic {} message {}", "kitchen2helper", message);
+		} catch (Exception e) {
+			log.info(e.getLocalizedMessage(), e);
+		} finally {
+			acknowledgment.acknowledge();
+		}
+	}
+
+	@KafkaListener(topics = "supplier2kitchen", groupId = "my-group")
+	public void fromSupplier(String message, Acknowledgment acknowledgment) {
+		try {
+			log.info("Topic {} message {}", "kitchen2helper", message);
+		} catch (Exception e) {
+			log.info(e.getLocalizedMessage(), e);
+		} finally {
+			acknowledgment.acknowledge();
+		}
+	}
+}

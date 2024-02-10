@@ -1,0 +1,19 @@
+# elasticsearch config
+achmad.rifai.es.url=${ELASTICSEARCH_URL}
+spring.data.elasticsearch.repositories.enabled=true
+spring.data.elasticsearch.cluster-nodes=${REDIS_HOST}:9300
+spring.data.elasticsearch.cluster-name=docker-cluster
+
+#redis config
+spring.redis.database=${REDIS_DATABASE}
+spring.redis.host=${REDIS_HOST}
+spring.redis.port=${REDIS_PORT}
+spring.redis.password=${REDIS_PASSWORD}
+spring.redis.timeout=60000
+
+# kafka config
+achmad.rifai.kafka.bootstrap-servers=${KAFKA_HOST}
+achmad.rifai.kafka.consumer.group-id=my-group
+achmad.rifai.kafka.consumer.auto-offset-reset=earliest
+
+my.kafka.topic=my-topic

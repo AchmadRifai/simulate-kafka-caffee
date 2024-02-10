@@ -1,0 +1,51 @@
+package achmad.rifai.cashier.service.services;
+
+import achmad.rifai.cashier.service.dto.ArrayRes;
+import achmad.rifai.cashier.service.dto.CategoryDto;
+import achmad.rifai.cashier.service.dto.InquiryPriceReq;
+import achmad.rifai.cashier.service.dto.InquiryPriceRes;
+import achmad.rifai.cashier.service.modals.Category;
+import achmad.rifai.cashier.service.modals.Menu;
+import achmad.rifai.cashier.service.modals.Menu1;
+import achmad.rifai.cashier.service.repositories.CategoryRepository;
+import achmad.rifai.cashier.service.repositories.MenuRepository;
+import achmad.rifai.cashier.service.utils.CashierUtils;
+
+import java.util.Map;
+
+import org.joda.money.Money;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@Service
+public class CashierService {
+    @Autowired
+    CategoryRepository categoryRepository;
+    @Autowired
+    MenuRepository menuRepository;
+
+    public Mono<ArrayRes<CategoryDto>> all() {
+        return categoryRepository.findAll()
+                .filter(c -> c.getMenus().stream().mapToInt(Menu1::getStock).sum() > 0)
+                .collectList()
+                .map(CashierUtils::toCategoryArrayRes)
+                .doOnError(CashierUtils::showError);
+    }
+
+	public Mono<InquiryPriceRes> inquiryPrice(InquiryPriceReq req) {
+		return Flux.fromIterable(req.getItems())
+				.flatMap(i -> menuRepository.findById(i.getIdMenu())
+						.map(Menu::getPrice)
+						.map(s -> Map.of("count", i.getQuantity(), "price", s)))
+				.map(m -> {
+					return 0;
+				})
+				.collectList()
+				.map(v -> InquiryPriceRes.builder()
+						.build())
+				.doOnError(CashierUtils::showError);
+	}
+}

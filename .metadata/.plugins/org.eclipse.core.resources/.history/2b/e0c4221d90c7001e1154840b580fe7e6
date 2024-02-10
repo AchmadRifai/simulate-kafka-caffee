@@ -1,0 +1,32 @@
+package achmad.rifai.waitres.services;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.waitres.dto.KafkaMessage;
+import achmad.rifai.waitres.dto.RedisSaver;
+import achmad.rifai.waitres.utils.WaitresUtil;
+import reactor.core.publisher.Mono;
+
+@Service
+public class WaitresService {
+
+	@Autowired
+	ReactiveRedisTemplate<String, RedisSaver> redisTemplate;
+	@Autowired
+	Environment env;
+	@Autowired
+	JavaMailSender sender;
+
+	public Mono<Boolean> sendEmail(String message) {
+		return Mono.just(message)
+				.map(WaitresUtil::toMessage)
+				.map(KafkaMessage::getId)
+				.flatMap(redisTemplate.opsForValue()::getAndDelete)
+				.map(v -> true)
+				.doOnError(WaitresUtil::showError);
+	}
+}

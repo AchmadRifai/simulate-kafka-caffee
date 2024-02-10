@@ -1,0 +1,18 @@
+package achmad.rifai.supplier.services;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.supplier.dto.KafkaMessage;
+import achmad.rifai.supplier.dto.RedisSaver;
+
+@Service
+public class ProducerService {
+
+	@Autowired
+	KafkaTemplate<String, KafkaMessage> template;
+	@Autowired
+	ReactiveRedisTemplate<String, RedisSaver> redisTemplate;
+}

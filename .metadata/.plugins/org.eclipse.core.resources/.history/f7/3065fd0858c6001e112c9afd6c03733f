@@ -1,0 +1,47 @@
+package achmad.rifai.kitchen.service.configs;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.r2dbc.connection.init.ConnectionFactoryInitializer;
+import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import achmad.rifai.kitchen.service.dto.RedisSaver;
+import io.r2dbc.spi.ConnectionFactory;
+
+@Configuration
+@EnableKafka
+@EnableR2dbcRepositories(basePackages = "achmad.rifai.kitchen.service.repositories.sql")
+public class KitchenConfig {
+
+	@Bean
+    ReactiveRedisTemplate<String, RedisSaver> redisTemplate(ReactiveRedisConnectionFactory factory) {
+        final var serializer = new Jackson2JsonRedisSerializer<>(RedisSaver.class);
+        final RedisSerializationContext.RedisSerializationContextBuilder<String, RedisSaver> context =
+                RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
+        return new ReactiveRedisTemplate<>(factory, context.value(serializer).build());
+    }
+
+	@Bean
+	ConnectionFactoryInitializer init(ConnectionFactory factory) {
+		final var init = new ConnectionFactoryInitializer();
+		init.setConnectionFactory(factory);
+		init.setDatabasePopulator(new ResourceDatabasePopulator(new ClassPathResource("schema.sql")));
+		return init;
+	}
+
+	@Bean
+	ObjectMapper mapper() {
+		return new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
+}

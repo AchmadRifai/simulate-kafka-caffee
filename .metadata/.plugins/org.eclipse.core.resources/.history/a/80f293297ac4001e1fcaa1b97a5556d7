@@ -1,0 +1,5 @@
+package achmad.rifai.cashier.service.repositories;
+
+public interface MenuRepository {
+
+}

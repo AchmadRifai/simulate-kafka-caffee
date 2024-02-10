@@ -1,0 +1,14 @@
+package achmad.rifai.kitchen.services;
+
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.kitchen.dto.KafkaMessage;
+
+@Service
+public class KitchenService {
+
+	public void supplying(KafkaMessage message) {
+		//
+	}
+
+}

@@ -1,0 +1,73 @@
+package achmad.rifai.cashier.service.utils;
+
+import achmad.rifai.cashier.service.dto.ArrayRes;
+import achmad.rifai.cashier.service.dto.CategoryDto;
+import achmad.rifai.cashier.service.dto.MenuDto;
+import achmad.rifai.cashier.service.dto.OrderItemDto;
+import achmad.rifai.cashier.service.dto.OrderReq;
+import achmad.rifai.cashier.service.dto.RedisSaver;
+import achmad.rifai.cashier.service.modals.Category;
+import achmad.rifai.cashier.service.modals.Menu1;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.joda.money.Money;
+
+@Slf4j
+public class CashierUtils {
+    private CashierUtils() {}
+
+    public static void showError(Throwable e) {
+    	log.info(e.getMessage(), e);
+    }
+
+    public static ArrayRes<CategoryDto> toCategoryArrayRes(List<Category> categories) {
+        final var result = categories.stream()
+                .map(CashierUtils::category2Dto)
+                .toList();
+        return new ArrayRes<>(result.isEmpty() ? null : result);
+    }
+
+    public static CategoryDto category2Dto(Category c) {
+        return CategoryDto.builder()
+                .id(c.getId())
+                .name(c.getName())
+                .menus(c.getMenus().stream()
+                        .filter(m -> m.getStock() > 0)
+                        .map(CashierUtils::menu2Dto)
+                        .toList())
+                .build();
+    }
+
+    public static MenuDto menu2Dto(Menu1 m) {
+        return MenuDto.builder()
+                .price(m.getPrice())
+                .name(m.getName())
+                .id(m.getId())
+                .category(m.getCategory())
+                .build();
+    }
+
+    public static Money countPriceMenu(Map<String, Object> map) {
+    	final var quantity = (Integer) map.get("count");
+    	final var price = (String) map.get("price");
+    	final var moneyPrice = Money.parse(price);
+    	return moneyPrice.multipliedBy(quantity);
+    }
+
+	public static RedisSaver toRedisSaver(OrderReq r) {
+		return RedisSaver.builder()
+				.id(UUID.randomUUID().toString())
+				.redisLocal(Map.of("emails", r.getEmail(), "tableId", r.getTableId(), "orders", r.getOrders().stream()
+						.map(CashierUtils::toMapOrder)
+						.toList()))
+				.build();
+	}
+
+	private static Map<String, Object> toMapOrder(OrderItemDto o) {
+		return Map.of("menu", o.getIdMenu(), "quantity", o.getQuantity());
+	}
+}

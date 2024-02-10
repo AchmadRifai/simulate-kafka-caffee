@@ -1,0 +1,14 @@
+package achmad.rifai.cashier.service;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.redis.repository.configuration.RedisRepositoriesRegistrar;
+
+@SpringBootApplication(exclude = RedisRepositoriesRegistrar.class)
+public class CashierServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(CashierServiceApplication.class, args);
+	}
+
+}

@@ -1,0 +1,5 @@
+package achmad.rifai.kitchen.models;
+
+public class SuppliedItem {
+
+}

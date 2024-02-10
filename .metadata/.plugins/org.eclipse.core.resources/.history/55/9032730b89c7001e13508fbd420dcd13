@@ -1,0 +1,164 @@
+package achmad.rifai.kitchen.services;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.kitchen.dto.KafkaMessage;
+import achmad.rifai.kitchen.dto.RedisSaver;
+import achmad.rifai.kitchen.exceptions.BreakProcessException;
+import achmad.rifai.kitchen.models.Category;
+import achmad.rifai.kitchen.models.Menu;
+import achmad.rifai.kitchen.models.Order;
+import achmad.rifai.kitchen.models.OrderItem;
+import achmad.rifai.kitchen.models.Supplied;
+import achmad.rifai.kitchen.models.SuppliedItem;
+import achmad.rifai.kitchen.repositories.CategoryRepository;
+import achmad.rifai.kitchen.repositories.MenuRepository;
+import achmad.rifai.kitchen.repositories.OrderItemRepository;
+import achmad.rifai.kitchen.repositories.OrderRepository;
+import achmad.rifai.kitchen.repositories.SuppliedItemRepository;
+import achmad.rifai.kitchen.repositories.SuppliedRepository;
+import jakarta.transaction.Transactional;
+
+@Service
+public class KitchenService {
+
+	@Autowired
+	ReactiveRedisTemplate<String, RedisSaver> redisTemplate;
+	@Autowired
+	SuppliedRepository suppliedRepository;
+	@Autowired
+	CategoryRepository categoryRepository;
+	@Autowired
+	MenuRepository menuRepository;
+	@Autowired
+	SuppliedItemRepository suppliedItemRepository;
+	@Autowired
+	ProducerService producerService;
+	@Autowired
+	OrderRepository orderRepository;
+	@Autowired
+	OrderItemRepository orderItemRepository;
+
+	@SuppressWarnings("unchecked")
+	@Transactional
+	public void supplying(KafkaMessage message) {
+		final var cache = redisTemplate.opsForValue().getAndDelete(message.getId()).blockOptional().orElseThrow();
+		final var items = (List<Map<String, Object>>) cache.getRedisLocal().get("items");
+		var supplied = suppliedRepository.save(Supplied.builder()
+				.email(String.valueOf(cache.getRedisLocal().get("email")))
+				.id(UUID.fromString(message.getId()))
+				.total(items.stream()
+						.map(m -> {
+							final var price = (BigDecimal) m.get("price");
+							final var count = (Integer) m.get("quantity");
+							return price.multiply(BigDecimal.valueOf(count));
+						}).reduce(BigDecimal.ZERO, BigDecimal::add))
+				.build());
+		for (var item: items) {
+			final var categoryName = (String) item.get("category");
+			final var category = categoryRepository.findByName(categoryName)
+					.orElse(categoryRepository.save(Category.builder()
+							.id(UUID.randomUUID())
+							.name(categoryName)
+							.build()));
+			final var menuName = (String) item.get("name");
+			var menu = menuRepository.findByNameAndCategory(menuName, category)
+					.orElse(menuRepository.save(Menu.builder()
+							.category(category)
+							.id(UUID.randomUUID())
+							.name(menuName)
+							.price(BigDecimal.ZERO)
+							.stock(0)
+							.build()));
+			final var price = (BigDecimal) item.get("price");
+			final var count = (Integer) item.get("quantity");
+			suppliedItemRepository.save(SuppliedItem.builder()
+					.id(UUID.randomUUID())
+					.menu(menu)
+					.quantity(count)
+					.subtotal(price.multiply(BigDecimal.valueOf(count)))
+					.supplied(supplied)
+					.build());
+			menu.setPrice(price.multiply(BigDecimal.valueOf(11)).divide(BigDecimal.TEN));
+			menu.setStock(menu.getStock() + count);
+			menuRepository.save(menu);
+		}
+		items.parallelStream()
+			.map(m -> m.get("category"))
+			.map(String::valueOf)
+			.distinct()
+			.map(categoryRepository::findByName)
+			.map(Optional::orElseThrow)
+			.parallel()
+			.forEach(producerService::sendToHelper2);
+		items.parallelStream()
+			.map(item -> {
+				final var categoryName = (String) item.get("category");
+				final var menuName = (String) item.get("name");
+				return String.format("%s %s", categoryName, menuName);
+			})
+			.distinct()
+			.map(s -> {
+				final var sa = s.split(" ");
+				final var category = categoryRepository.findByName(sa[0]).orElseThrow();
+				return menuRepository.findByNameAndCategory(sa[1], category).orElseThrow();
+			})
+			.parallel()
+			.forEach(producerService::sendToHelper);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Transactional
+	public void ordering(KafkaMessage message) {
+		final var cache = redisTemplate.opsForValue().getAndDelete(message.getId()).blockOptional().orElseThrow();
+		final var items = (List<Map<String, Object>>) cache.getRedisLocal().get("orders");
+		final var order = orderRepository.save(Order.builder()
+				.id(UUID.fromString(cache.getId()))
+				.email(String.valueOf(cache.getRedisLocal().get("email")))
+				.tableId(String.valueOf(cache.getRedisLocal().get("tableId")))
+				.total(items.stream()
+						.map(item -> {
+							final var id = (String) item.get("menu");
+							final var menu = menuRepository.findById(UUID.fromString(id)).orElseThrow();
+							final var qty = (Integer) item.get("quantity");
+							return menu.getPrice().multiply(BigDecimal.valueOf(qty));
+						}).reduce(BigDecimal.ZERO, BigDecimal::add))
+				.build());
+		for (var item : items) {
+			final var id = (String) item.get("menu");
+			final var menu = menuRepository.findById(UUID.fromString(id)).orElseThrow();
+			final var qty = (Integer) item.get("quantity");
+			if (menu.getStock() < qty) {
+				producerService.sendToWaitres(String.format("Insuficient stock %s", menu.getName()));
+				throw new BreakProcessException("Insuficient stock");
+			}
+			menu.setStock(menu.getStock() - qty);
+			menuRepository.save(menu);
+			orderItemRepository.save(OrderItem.builder()
+					.id(UUID.randomUUID())
+					.menu(menu)
+					.order(order)
+					.quantity(qty)
+					.subtotal(menu.getPrice().multiply(BigDecimal.valueOf(qty)))
+					.build());
+		}
+		items.parallelStream()
+			.map(item -> item.get("menu"))
+			.map(String::valueOf)
+			.map(UUID::fromString)
+			.distinct()
+			.map(menuRepository::findById)
+			.map(Optional::orElseThrow)
+			.parallel()
+			.forEach(producerService::sendToHelper);
+	}
+
+}

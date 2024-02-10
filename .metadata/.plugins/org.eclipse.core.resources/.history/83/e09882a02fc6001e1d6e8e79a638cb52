@@ -1,0 +1,9 @@
+package achmad.rifai.cashier.service.repositories;
+
+import org.springframework.data.elasticsearch.repository.ReactiveElasticsearchRepository;
+
+import achmad.rifai.cashier.service.modals.Category;
+
+public interface CategoryRepository extends ReactiveElasticsearchRepository<Category, String> {
+
+}

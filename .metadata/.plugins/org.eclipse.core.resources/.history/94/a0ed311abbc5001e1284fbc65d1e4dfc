@@ -1,0 +1,53 @@
+package achmad.rifai.cashier.service.configs;
+
+import achmad.rifai.cashier.service.dto.RedisSaver;
+
+import java.util.HashMap;
+
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisOperations;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.serializer.JsonSerializer;
+
+@Configuration
+public class BaseConfig {
+	@Value("${achmad.rifai.kafka.bootstrap-servers}")
+	private String kafkaHost;
+
+	@Bean
+    ReactiveRedisTemplate<String, RedisSaver> redisTemplate(ReactiveRedisConnectionFactory factory) {
+        final var serializer = new Jackson2JsonRedisSerializer<>(RedisSaver.class);
+        final RedisSerializationContext.RedisSerializationContextBuilder<String, RedisSaver> context =
+                RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
+        return new ReactiveRedisTemplate<>(factory, context.value(serializer).build());
+    }
+
+    @Bean
+    ReactiveRedisOperations<String, RedisSaver> redisOps(ReactiveRedisTemplate<String, RedisSaver> template) {
+        return template;
+    }
+
+    @Bean
+    KafkaTemplate<String, RedisSaver> createOrderKafkaTemplate(ProducerFactory<String, RedisSaver> factory) {
+    	return new KafkaTemplate<>(factory);
+    }
+
+    @Bean
+    ProducerFactory<String, RedisSaver> createOrderProducerFactory() {
+    	final var config = new HashMap<String, Object>();
+    	config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaHost);
+    	config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+    	config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+    	return new DefaultKafkaProducerFactory<>(config);
+    }
+}

@@ -1,0 +1,7 @@
+package achmad.rifai.supplier.dto;
+
+import java.io.Serializable;
+
+public class RedisSaver implements Serializable {
+
+}

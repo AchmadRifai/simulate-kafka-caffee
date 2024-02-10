@@ -1,0 +1,4 @@
+achmad.rifai.es.url=${ELASTICSEARCH_URL}
+spring.data.elasticsearch.repositories.enabled=true
+spring.data.elasticsearch.cluster-nodes=host.docker.internal:9300
+spring.data.elasticsearch.cluster-name=docker-cluster

@@ -1,0 +1,14 @@
+package achmad.rifai.kitchen.services;
+
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.kitchen.models.Menu;
+
+@Service
+public class ProducerService {
+
+	public void sendToHelper(Menu menu) {
+		//
+	}
+
+}

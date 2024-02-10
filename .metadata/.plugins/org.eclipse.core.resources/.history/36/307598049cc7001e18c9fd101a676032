@@ -1,0 +1,16 @@
+package achmad.rifai.helper.utils;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+public class HelperUtil {
+
+	public HelperUtil() {
+		super();
+	}
+
+	public static void showError(Throwable e) {
+		log.info(e.getLocalizedMessage(), e);
+	}
+
+}

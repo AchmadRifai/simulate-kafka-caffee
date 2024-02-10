@@ -1,0 +1,5 @@
+package achmad.rifai.kitchen.exceptions;
+
+public class BreakProcessException {
+
+}

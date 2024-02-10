@@ -1,0 +1,26 @@
+package achmad.rifai.helper.services;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.helper.dto.KafkaMessage;
+import achmad.rifai.helper.dto.RedisSaver;
+import achmad.rifai.helper.utils.HelperUtil;
+import reactor.core.publisher.Mono;
+
+@Service
+public class HelperService {
+
+	@Autowired
+	ReactiveRedisTemplate<String, RedisSaver> template2;
+
+	public Mono<Boolean> helperConsuming(String message) {
+		return Mono.just(message)
+				.map(HelperUtil::toMessage)
+				.map(KafkaMessage::getId)
+				.flatMap(template2.opsForValue()::getAndDelete)
+				.map(v -> true)
+				.doOnError(HelperUtil::showError);
+	}
+}

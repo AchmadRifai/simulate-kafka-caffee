@@ -1,0 +1,24 @@
+package achmad.rifai.cashier.service.services;
+
+import achmad.rifai.cashier.service.dto.ArrayRes;
+import achmad.rifai.cashier.service.dto.CategoryDto;
+import achmad.rifai.cashier.service.modals.Menu1;
+import achmad.rifai.cashier.service.repositories.CategoryRepository;
+import achmad.rifai.cashier.service.utils.CashierUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+
+@Service
+public class CashierService {
+    @Autowired
+    CategoryRepository categoryRepository;
+
+    public Mono<ArrayRes<CategoryDto>> all() {
+        return categoryRepository.findAll()
+                .filter(c -> c.getMenus().stream().mapToInt(Menu1::getStock).sum() > 0)
+                .collectList()
+                .map(CashierUtils::toCategoryArrayRes)
+                .doOnError(e->{});
+    }
+}

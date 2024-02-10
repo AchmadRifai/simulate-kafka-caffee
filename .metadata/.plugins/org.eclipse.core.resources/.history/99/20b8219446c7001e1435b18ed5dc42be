@@ -1,0 +1,32 @@
+package achmad.rifai.supplier.services;
+
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.supplier.dto.KafkaMessage;
+import achmad.rifai.supplier.dto.RedisSaver;
+import reactor.core.publisher.Mono;
+
+@Service
+public class ProducerService {
+
+	@Autowired
+	KafkaTemplate<String, KafkaMessage> template;
+	@Autowired
+	ReactiveRedisTemplate<String, RedisSaver> redisTemplate;
+
+	public Mono<Object> cashierToKitchen(RedisSaver saver) {
+		final var topic = "cashier2kitchen";
+		final var id = UUID.randomUUID().toString();
+		return redisTemplate.opsForValue()
+				.set(id, saver)
+				.map(b -> KafkaMessage.builder()
+						.id(id)
+						.build())
+				.flatMap(m -> Mono.fromFuture(template.send(topic, m)));
+	}
+}

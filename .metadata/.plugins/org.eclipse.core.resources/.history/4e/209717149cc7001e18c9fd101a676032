@@ -1,0 +1,16 @@
+package achmad.rifai.helper.services;
+
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.helper.utils.HelperUtil;
+import reactor.core.publisher.Mono;
+
+@Service
+public class HelperService {
+
+	public Mono<Boolean> helperConsuming(String message) {
+		return Mono.just(message)
+				.map(v -> true)
+				.doOnError(HelperUtil::showError);
+	}
+}

@@ -1,0 +1,5 @@
+package achmad.rifai.supplier.dto;
+
+public class MenuDto {
+
+}

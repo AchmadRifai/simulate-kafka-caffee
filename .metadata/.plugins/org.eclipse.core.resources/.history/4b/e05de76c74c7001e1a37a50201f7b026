@@ -1,0 +1,7 @@
+package achmad.rifai.kitchen.models;
+
+import java.io.Serializable;
+
+public class Supplied implements Serializable {
+
+}

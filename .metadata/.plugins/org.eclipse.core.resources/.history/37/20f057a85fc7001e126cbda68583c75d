@@ -1,0 +1,13 @@
+package achmad.rifai.waitres;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class WaitresServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(WaitresServiceApplication.class, args);
+	}
+
+}

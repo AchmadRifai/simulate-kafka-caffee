@@ -1,0 +1,29 @@
+package achmad.rifai.kitchen.configs;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import achmad.rifai.kitchen.dto.RedisSaver;
+
+@Configuration
+@EnableKafka
+@EnableTransactionManagement
+public class KitchenConfig {
+
+	@Bean
+	LettuceConnectionFactory factory() {
+		return new LettuceConnectionFactory();
+	}
+
+	@Bean
+	RedisTemplate<String, RedisSaver> template(RedisConnectionFactory factory) {
+		final var tpl = new RedisTemplate<String, RedisSaver>();
+		tpl.setConnectionFactory(factory);
+		return new RedisTemplate<String, RedisSaver>();
+	}
+}

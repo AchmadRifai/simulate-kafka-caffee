@@ -1,0 +1,15 @@
+package achmad.rifai.waitres.services;
+
+import org.springframework.stereotype.Service;
+
+import reactor.core.publisher.Mono;
+
+@Service
+public class WaitresService {
+
+
+	public Mono<Boolean> sendEmail(String message) {
+		return Mono.just(1)
+				.map(v -> true);
+	}
+}

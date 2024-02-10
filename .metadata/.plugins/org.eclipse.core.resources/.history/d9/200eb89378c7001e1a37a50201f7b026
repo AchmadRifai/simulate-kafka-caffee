@@ -1,0 +1,51 @@
+package achmad.rifai.kitchen.services;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import achmad.rifai.kitchen.dto.KafkaMessage;
+import achmad.rifai.kitchen.dto.RedisSaver;
+import achmad.rifai.kitchen.models.Supplied;
+import achmad.rifai.kitchen.repositories.SuppliedRepository;
+import jakarta.transaction.Transactional;
+
+@Service
+public class KitchenService {
+
+	@Autowired
+	ReactiveRedisTemplate<String, RedisSaver> redisTemplate;
+	@Autowired
+	SuppliedRepository suppliedRepository;
+
+	@SuppressWarnings("unchecked")
+	@Transactional
+	public void supplying(KafkaMessage message) {
+		final var cache = redisTemplate.opsForValue().getAndDelete(message.getId()).blockOptional().orElseThrow();
+		final var items = (List<Map<String, Object>>) cache.getRedisLocal().get("items");
+		var supplied = suppliedRepository.save(Supplied.builder()
+				.email(String.valueOf(cache.getRedisLocal().get("email")))
+				.id(UUID.fromString(message.getId()))
+				.total(items.stream()
+						.map(m -> {
+							final var price = (BigDecimal) m.get("price");
+							final var count = (Integer) m.get("quantity");
+							return price.multiply(BigDecimal.valueOf(count));
+						}).reduce(BigDecimal.ZERO, BigDecimal::add))
+				.build());
+		for (var item: items) {
+			//
+		}
+	}
+
+	@Transactional
+	public void ordering(KafkaMessage message) {
+		//
+	}
+
+}

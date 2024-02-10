@@ -1,0 +1,5 @@
+package achmad.rifai.kitchen.repositories;
+
+public interface OrderRepository {
+
+}
